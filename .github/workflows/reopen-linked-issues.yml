@@ -1,0 +1,95 @@
+name: Reopen Linked Issues on PR Merge
+
+on:
+    pull_request:
+        types: [closed]
+
+permissions:
+    id-token: write
+    issues: write
+    contents: read
+
+jobs:
+    reopen_linked_issues:
+        runs-on: ubuntu-latest
+        if: github.event.pull_request.merged == true
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v3
+
+            - name: Find and Reopen Linked Issues
+              uses: actions/github-script@v5
+              with:
+                  script: |
+                      const { owner, repo } = context.repo;
+                      console.log('Context owner, repo:', owner, repo);
+                      const prNumber = context.payload.pull_request.number;
+                      console.log('PR Number:', prNumber);
+
+                      // Function to extract linked issues from text
+                      function extractLinkedIssues(text) {
+                        const issueRefs = text.match(/#[0-9]+/g) || [];
+                        return issueRefs.map(ref => ref.replace('#', ''));
+                      }
+
+                      // Fetch the pull request to get linked issues from the body and commits
+                      const pr = await github.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
+                        owner,
+                        repo,
+                        pull_number: prNumber
+                      });
+                      console.log('PR Data:', pr.data);
+
+                      // Extract linked issues from the PR body
+                      let linkedIssues = extractLinkedIssues(pr.data.body);
+                      console.log('Linked Issues from PR Body:', linkedIssues);
+
+                      // Fetch commits associated with the pull request
+                      const commits = await github.request('GET /repos/{owner}/{repo}/pulls/{pull_number}/commits', {
+                        owner,
+                        repo,
+                        pull_number: prNumber
+                      });
+
+                      // Extract linked issues from commit messages
+                      commits.data.forEach(commit => {
+                        linkedIssues = linkedIssues.concat(extractLinkedIssues(commit.commit.message));
+                      });
+
+                      console.log('Linked Issues from PR Body + Commits:', linkedIssues);
+
+                      // Remove duplicate issue numbers
+                      linkedIssues = [...new Set(linkedIssues)];
+                      console.log('Unique Linked Issues:', linkedIssues);
+
+                      if (linkedIssues.length > 0) {
+                        for (const issueNumber of linkedIssues) {
+                          // Fetch the issue to check the closed date
+                          const issue = await github.request('GET /repos/{owner}/{repo}/issues/{issue_number}', {
+                            owner,
+                            repo,
+                            issue_number: issueNumber
+                          });
+                          console.log('Issue Data:', issue.data);
+
+                          // Reopen the linked issue
+                          await github.request('PATCH /repos/{owner}/{repo}/issues/{issue_number}', {
+                            owner,
+                            repo,
+                            issue_number: issueNumber,
+                            state: 'open'
+                          });
+
+                          // Add a comment to indicate the issue was reopened by this action
+                          await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
+                            owner,
+                            repo,
+                            issue_number: issueNumber,
+                            body: 'Issue was reopened automatically because a linked PR was merged.'
+                          });
+                        }
+                      } else {
+                        console.log('No linked issues found in the PR body or commit messages.');
+                      }
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
