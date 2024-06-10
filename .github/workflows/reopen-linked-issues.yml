@@ -28,6 +28,7 @@ jobs:
 
                       // Function to extract linked issues from text
                       function extractLinkedIssues(text) {
+                        if (!text) return [];
                         const issueRefs = text.match(/#[0-9]+/g) || [];
                         return issueRefs.map(ref => ref.replace('#', ''));
                       }
