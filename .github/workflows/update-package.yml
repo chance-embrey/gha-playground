@@ -1,0 +1,61 @@
+name: Update Package Version
+
+on:
+    workflow_dispatch:
+        inputs:
+            package:
+                description: 'The npm package you want to grab the version of.'
+                default: 'moment'
+                required: false
+            message:
+                description: 'The concise message you want displayed in the commit, build name, & PR'
+                default: 'fix: update package version'
+                required: false
+            prprefix:
+                description: 'Ensure that each pr is prefixed so not to overwrite other auto generated prs'
+                default: 'prpfx'
+                required: false
+
+env:
+    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    GH_HOST: github.com
+
+jobs:
+    update-package-version:
+        name: '${{ github.event.inputs.message }}'
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                shell: sh
+        steps:
+            - name: checkout
+              uses: actions/checkout@v3
+
+            - name: Setup Node
+              uses: actions/setup-node@v3
+              with:
+                  node-version-file: '.nvmrc'
+
+            - name: Install
+              run: npm install ${{ github.event.inputs.package }}
+
+            - name: Create Pull Request
+              uses: peter-evans/create-pull-request@v4
+              id: cpr
+              with:
+                  commit-message: ${{ github.event.inputs.message }}
+                  title: ${{ github.event.inputs.message }}
+                  body: ${{ github.event.inputs.message }}
+                  base: master
+                  labels: version-automated-pr
+                  branch: ${{ github.event.inputs.prprefix }}-auto-update-package-version
+                  delete-branch: true
+
+            - name: Enable Pull Request Auto Merge
+              if: steps.cpr.outputs.pull-request-operation == 'created'
+              run: gh pr merge --merge --auto ${{ github.event.pull_request.number }}
+
+            - name: Auto Approve PR
+              if: steps.cpr.outputs.pull-request-operation == 'created'
+              run: gh pr review --approve "${{ steps.cpr.outputs.pull-request-number }}"
