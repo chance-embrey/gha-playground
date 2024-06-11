@@ -1,0 +1,58 @@
+name: Verify
+
+on:
+    workflow_dispatch:
+    pull_request:
+
+permissions:
+    id-token: write
+    contents: read
+
+jobs:
+    verify:
+        name: Verify and Build
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Setup Node
+              uses: actions/setup-node@v3
+              with:
+                  node-version-file: '.nvmrc'
+
+            - name: Install
+              run: |
+                  npm ci
+
+            - name: Verify
+              run: |
+                  npm run verify
+
+            - name: Build
+              run: |
+                  npm run build
+
+            - name: Create Check Run
+              uses: actions/github-script@v5
+              with:
+                  script: |
+                      const { owner, repo } = context.repo
+                      const { number } = context.issue
+                      const { sha } = context
+                      const { GITHUB_TOKEN } = github.secrets
+                      const octokit = github.getOctokit(GITHUB_TOKEN)
+                      await octokit.rest.checks.create({
+                      owner,
+                      repo,
+                      name: 'Verify and Build',
+                      head_sha: sha,
+                      status: 'completed',
+                      conclusion: 'success',
+                      output: {
+                      title: 'Verify and Build',
+                      summary: 'The workflow completed successfully.',
+                      },
+                      })
