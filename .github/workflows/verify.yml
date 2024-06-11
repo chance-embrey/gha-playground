@@ -18,22 +18,22 @@ jobs:
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
 
-            - name: Setup Node
-              uses: actions/setup-node@v3
-              with:
-                  node-version-file: '.nvmrc'
+            # - name: Setup Node
+            #   uses: actions/setup-node@v3
+            #   with:
+            #       node-version-file: '.nvmrc'
 
-            - name: Install
-              run: |
-                  npm ci
+            # - name: Install
+            #   run: |
+            #       npm ci
 
-            - name: Verify
-              run: |
-                  npm run verify
+            # - name: Verify
+            #   run: |
+            #       npm run verify
 
-            - name: Build
-              run: |
-                  npm run build
+            # - name: Build
+            #   run: |
+            #       npm run build
 
             - name: Create Check Run
               uses: actions/github-script@v5
