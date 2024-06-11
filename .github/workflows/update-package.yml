@@ -35,7 +35,7 @@ jobs:
             - name: Setup Node
               uses: actions/setup-node@v3
               with:
-                  node-version-file: '.nvmrc'
+                  node-version: '14'
 
             - name: Install
               run: npm install ${{ github.event.inputs.package }}
