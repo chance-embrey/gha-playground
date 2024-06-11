@@ -39,19 +39,11 @@ jobs:
               uses: actions/github-script@v5
               with:
                   script: |
-                      const { owner, repo } = context.repo
-                      const { sha } = context
-                      await github.request('POST /repos/{owner}/{repo}/checks', {
-                        owner,
-                        repo,
+                      await github.rest.checks.create({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
                         name: 'Verify and Build',
-                        head_sha: sha,
-                        status: 'completed',
-                        conclusion: 'success',
-                        output: {
-                          title: 'Verify and Build',
-                          summary: 'The workflow completed successfully.',
-                        },
+                        head_sha: context.sha,
                       })
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
