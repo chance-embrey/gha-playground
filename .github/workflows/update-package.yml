@@ -3,7 +3,6 @@ name: Update Package Version
 permissions:
     id-token: write
     contents: write
-    checks: write
 
 on:
     workflow_dispatch:
@@ -30,6 +29,7 @@ jobs:
     update-package-version:
         name: '${{ github.event.inputs.message }}'
         runs-on: ubuntu-latest
+        permissions: write-all
         defaults:
             run:
                 shell: sh
