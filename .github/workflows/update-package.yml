@@ -1,5 +1,10 @@
 name: Update Package Version
 
+permissions:
+    id-token: write
+    contents: write
+    checks: write
+
 on:
     workflow_dispatch:
         inputs:
