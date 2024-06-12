@@ -77,9 +77,7 @@ jobs:
         needs: verify-and-build
         steps:
             - name: Enable Auto Merge
-              if: steps.cpr.outputs.pull-request-operation == 'created'
               run: gh pr merge --merge --auto ${{ github.event.pull_request.number }}
 
             - name: Auto Approve PR
-              if: steps.cpr.outputs.pull-request-operation == 'created'
               run: gh pr review --approve "${{ steps.cpr.outputs.pull-request-number }}"
